@@ -1,10 +1,12 @@
-# redux-cq
+# redux-ecq
+
+E for Entity: an entity is a business object that has identity in the domain which we are building a front-end for. Typically, in any real-world application, a business domain can be seen as a collection of entities that refer to each other by identity.
 
 C for Command: a call to a remote backend to modify the state of that backend, to execute a side-effect that changes the state of the world, e.g. place an order on an e-store, triggers a shipment ... etc.
 
 Q for Query: On the other side, a query is a call to a remote backend to retrieve data without changing anything.
 
-Redux CQ is a library that allows developers to run commands and queries against backends while managing all the involved state, including query / command execution states and the state of data entities coming back from queries or being updated by commands. The library helps bring the following merits to a front-end application:
+Redux ECQ is a library that allows developers to run commands and queries against backends while managing all the involved state, including query / command execution states and the state of data entities coming back from queries or being updated by commands. The library helps bring the following merits to front-end applications:
 
 ## Less or No Side-Effect-Managing Business Inside Components
 TBD
