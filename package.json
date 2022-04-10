@@ -1,6 +1,6 @@
 {
   "name": "redux-ecq",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Library for managing backend queries, commands and entities",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
