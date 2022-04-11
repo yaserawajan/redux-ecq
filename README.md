@@ -9,86 +9,7 @@
 Redux ECQ is a library that allows developers to run commands and queries against backends while managing all the involved state, including query / command execution states and the state of data entities coming back from queries or being updated by commands. The library helps bring the following merits to front-end applications while alleviating the extra boilerplate code and indirection required to typically achieve that:
 
 ## Less or No Side-Effect-Managing Business Inside Components
-The library offers hooks for watching query state and firing query requests in one-way fashion. The following code snippet shows how queries are created and run as hooks using this library:
-
-```ts
-import { 
-    queryHook, 
-    jsEntity, 
-    jsString,
-    jsNumber,
-    jsDate
-} from "redux-ecq";
-
-
-const entityModel = {
-    shipment: jsEntity({
-        id: jsString(),
-        weight: jsNumber(),
-        deliveryDate: jsDate(),
-        shipper: jsRef("customer"),
-        consignee: jsRef("customer")
-    }, "id"),
-
-    customer: jsEntity({
-        accountId: jsString(),
-        name: jsString()
-    }, "accountId")
-}
-
-// ... etc
-
-const useShipmentFinder = queryHook(entityModel, "shipment", (req:ShipmentFindReq) => {
-
-    return Promise.resolve({
-        total: 2, 
-        results: [
-            {
-                id: "1",
-                weight: 45,
-                deliveryDate: new Date(),
-                shipper: {
-                    accountId: "acc3",
-                    name: "Mary Jane"
-                },
-                consignee: {
-                    accountId: "acc1",
-                    name: "John Doe",
-                },
-
-            },
-            {
-                id: "2",
-                weight: 45,
-                delieryDate: new Date(),
-                shipper: {
-                    accountId: "acc3",
-                    name: "Mary Jane"
-                },
-                consignee: {
-                    accountId: "acc1",
-                    name: "John Doe",
-                }
-            }
-        ]
-    });
-
-});
-
-// ... etc
-
-const ShipmentSearchPanel = ({ }) => {
-
-    const [queryState, find] = useShipmentFinder({ /* request ... */});
-    
-    return (
-        <div>
-            {queryState.data.map(i => (<Shipment />))}
-        </div>
-    )
-}
-
-```
+The library offers hooks for watching query state and firing query requests in one-way fashion. 
 
 ## Reactive-Readiness
 Redux ECQ is a library that leverages Redux to enable building React components that are really "reactive" in that they are agnostic to a backend's communication patterns (request-reply or push-based). A reactive component is one that does not "ask" for data but instead "tells" its need for data and then reacts to state changes as data arrives back, no promises involved.
@@ -121,7 +42,8 @@ import {
     jsEntity, 
     jsString,
     jsNumber,
-    jsDate,
+    jsDateTime,
+    jsRef,
     TypeOf
 } from "redux-ecq";
 
@@ -187,7 +109,7 @@ export const useShipmentFinder = queryHook(entityModel, "shipment", (req:Shipmen
             {
                 id: "2",
                 weight: 23,
-                delieryDate: new Date(),
+                deliveryDate: new Date(),
                 shipper: {
                     accountId: "acc3",
                     name: "Mary Jane"
@@ -220,13 +142,50 @@ const ShipmentSearchPanel = ({ }) => {
     )
 }
 
-
 ```
 
 ### Out First Command
+Commands are actions that change data. The results of a command is one or changes to the entities affected by that command. We are going to write a sample / fictuous command that renames a customer account.
 
-TBD
+my_commands.ts
 
+```ts
+import { commandHook } from "redux-ecq";
+import { entityModel } from "./my_domain.ts"  // our entity model
+
+
+interface CustomerUpdateCommand {
+    customerId: string
+    newName: string
+}
+
+const useCustomerUpdater = commandHook(entityModel, (applyChanges) => 
+    (cmd:CustomerUpdateCommand) => {
+
+        // replace this with an actual backend call that returns a promise
+        const backendCall = Promise.resolve({
+            // Ideally, commands are one-way, but practically, in real world, sometimes backend commands are designed to return newly created IDs or other values. Result is the actual result that will go back to the 
+            // ...
+        });
+
+        return backendCall.then(res => {
+            // a call to this method will apply changes to concerned entities and dependent views will re-render accordingly
+            applyChanges({
+                modified: {
+                    customer: {
+                        [cmd.customerId]: {
+                            name: cmd.newName
+                        }
+                    }
+                }
+            });
+            // return expected response from command
+            return res;
+        })
+});
+
+
+```
 
 
 

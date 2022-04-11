@@ -22,7 +22,7 @@ const nextId = () => ++__seq;
 
 export const queryHook = <
     TModel extends EntityModel,
-    TReq,
+    TReq extends {},
     TName extends keyof TModel,
     TProps extends TModel[TName]["props"],
     TData extends Denormalized<TModel,TProps>>(
@@ -39,7 +39,7 @@ export const queryHook = <
                     }); 
             }
     
-        const initViewState = (req:TReq) => ({
+        const initViewState = (req: TReq | {}) => ({
             data: [],
             pending: true,
             lastError: null,
@@ -49,20 +49,22 @@ export const queryHook = <
             lastHandledReq: {}
         });
 
-        return (req: TReq, maxDepth: number = 3): [SViewSummary<TModel,TReq,TName>, (req:TReq) => void] => {
+        return (req?: TReq, maxDepth: number = 3): [SViewSummary<TModel,TReq,TName>, (req:TReq) => void] => {
             const [viewSeq, _] = useState(nextId().toString());
-            const sView = useCqSelector(s => s.views[viewSeq] as SViewSummary<TModel,TReq,TName> ?? initViewState(req), shallowEqual);
+            const sView = useCqSelector(s => s.views[viewSeq] as SViewSummary<TModel,TReq,TName> ?? initViewState(req ?? { }), shallowEqual);
             const dispatch = useDispatch();
 
             // view mounting / unmounting
             const fetcher = createFetcher(viewSeq, dispatch, maxDepth);
 
             useEffect(() => {
-                fetcher(req);
+                if (req !== undefined) {
+                    fetcher(req);
+                }
                 return () => {
                     dispatch(viewUnmount(viewSeq));
                 }
-            }, Object.values(req as any)); //[initReq]);
+            }, Object.values(req as any ?? { })); //[initReq]);
 
             // return view state and one-way fetcher method
             return [sView, fetcher];
@@ -72,38 +74,29 @@ export const queryHook = <
 
 export type QueryHook<TModel extends EntityModel,TReq,TName extends keyof TModel> = (initReq:TReq, maxDepth:number) => [SViewSummary<TModel,TReq,TName>,(req:TReq) => void]
 
-
-
 type CommandResponse<TPayload> = TPayload
 
 type CommandHandler<TCommand,TRes> = (params:TCommand) => Promise<CommandResponse<TRes>>
 
-interface WithUpdates<TModel extends EntityModel,TRes> {
-    updates?: Partial<ChangeReport<TModel>>
-    result?: TRes
-}
+type Updater<TModel extends EntityModel> = (updates:Partial<ChangeReport<TModel>>) => void
 
 export const commandHook = <
     TModel extends EntityModel,
     TCommand,
-    TRes>(entityModel:TModel, handler:CommandHandler<TCommand,WithUpdates<TModel,TRes>>) => {
+    TRes>(entityModel:TModel, handlerFactory:(applyChanges:Updater<TModel>) => CommandHandler<TCommand,TRes>) => {
 
         return () => {
             const dispatch = useDispatch();
 
-            return (params:TCommand) => {
-                handler(params)
-                    .then(({ result, updates = { } }) => {
-
-                        dispatch(dataSync({
-                            modified: { },
-                            created: { },
-                            deleted: { },
-                            ...updates
-                        }));
-
-                        return result;
-                    })
+            const updater = (updates:Partial<ChangeReport<TModel>>) => {
+                dispatch(dataSync({
+                    modified: { },
+                    created: { },
+                    deleted: { },
+                    ...updates
+                }));
             }
+
+            return handlerFactory(updater);
         }
-}
+};
