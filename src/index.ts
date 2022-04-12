@@ -1,7 +1,7 @@
 
 export { queryHook, commandHook } from "./hookApi";
 
-export { jsEntity, jsRef, jsBoolean, jsNumber, jsDateTime, jsString, useEcqSelector, ECQ_REDUCER_KEY } from "./core";
+export { jsObject, jsEntity, jsRef, jsBoolean, jsNumber, jsDateTime, jsString, useEcqSelector, ECQ_REDUCER_KEY } from "./core";
 
 export { createEcqReducer } from "./reducers";
 
