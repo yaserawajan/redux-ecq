@@ -2,7 +2,7 @@ import { DependencyTable, EntityRefCollection } from "./core";
 
 
 const cloneDeps = (deps:DependencyTable) => {
-    let clone:DependencyTable = { }
+    const clone:DependencyTable = { }
     for (const type in deps) {
         clone[type] = { }
         for (const key in deps[type]) {
@@ -15,7 +15,7 @@ const cloneDeps = (deps:DependencyTable) => {
 }
 
 export const addDeps = (deps:DependencyTable, viewSeq:string, entities:EntityRefCollection) => {
-    let moreDeps = cloneDeps(deps);
+    const moreDeps = cloneDeps(deps);
     for (const type in entities) {
         moreDeps[type] = moreDeps[type] ?? { };
         for (const key in entities[type]) {
@@ -42,16 +42,20 @@ export const orphanEntities = (deps: DependencyTable) => (
             type, 
             Object.fromEntries(
                 Object.entries(data)
+                    /* eslint-disable */
                     .filter(([_, viewSeqs]) => Object.keys(viewSeqs).length < 1)
                     .map(([key, _]) => [key, true]))
         ]).filter(([_, l]) => Object.keys(l).length > 0)));
+        /* eslint-enable */
 
 export const removeDepEntities = (deps:DependencyTable, entities:EntityRefCollection) => {
     const newEntries = Object.entries(deps)
         .map(([type, keys]) => [
             type, 
             Object.fromEntries(Object.entries(keys)
+            /* eslint-disable */
                 .filter(([key, _]) => !(type in entities) || !(key in (entities[type] ?? {}))))
+                /* eslint-enable */
         ]);
     return Object.fromEntries(newEntries);
 }
@@ -60,7 +64,9 @@ export const removeDepView = (deps:DependencyTable,  viewSeq:string):DependencyT
     const newEntries = Object.entries(deps)
         .map(([type, keys]) => [
             type, 
+            /* eslint-disable */
             Object.fromEntries(Object.entries(keys).map(([key, { [viewSeq]:_, ...rest }]) => [key, rest]))
+            /* eslint-enable */
         ]);
     return Object.fromEntries(newEntries);
 }

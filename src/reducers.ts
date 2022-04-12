@@ -13,7 +13,7 @@ export const createEcqReducer = <TModel extends EntityModel>(entityModel: TModel
 
     const purgeEntities = (s: S<TModel>, viewSeq:string):[EntityDb<TModel>, DependencyTable] => {
         // cleanup entities referenced by existing view
-        let depsCleanup = removeDepView(s.deps, viewSeq);
+        const depsCleanup = removeDepView(s.deps, viewSeq);
         const orphans = orphanEntities(depsCleanup);
         const deps = removeDepEntities(depsCleanup, orphans);
         const entities = removeEntities(s.entities, orphans);
@@ -48,7 +48,7 @@ export const createEcqReducer = <TModel extends EntityModel>(entityModel: TModel
                 // merge entities
                 const updatedEntities = mergeEntities(entities, updates);
                 // denormalize data again to ensure consistency
-                const data = denormalize(entityModel, updatedEntities, rootKeys, [jsRef(action.rootEntity)], action.maxDepth) as any;
+                const data = denormalize(entityModel, updatedEntities, rootKeys, [jsRef(action.rootEntity)], action.maxDepth) as [];
                 return {
                     ...s,
                     deps: addDeps(deps, action.viewSeq, uniqueEntityRefs(updates)),
@@ -62,8 +62,8 @@ export const createEcqReducer = <TModel extends EntityModel>(entityModel: TModel
                             lastError: null,
                             lastErrorType: null,
                             data,
-                            lastHandledReq: action.request as any,
-                            rootEntity: action.rootEntity as any,
+                            lastHandledReq: action.request,
+                            rootEntity: action.rootEntity as string,
                             maxDepth: action.maxDepth,
                             total: action.total
                         }
@@ -73,7 +73,9 @@ export const createEcqReducer = <TModel extends EntityModel>(entityModel: TModel
         }
 
         else if (action.type === "CQ/VIEW-UNMOUNT") {
-            const { [action.viewSeq]:_, ...views } = s.views;
+            /* eslint-disable */
+            const { [action.viewSeq]:_oldView, ...views } = s.views;
+            /* eslint-enable */
             // remove view from dependency table
             const [entities, deps] = purgeEntities(s, action.viewSeq);
             // updated state

@@ -51,9 +51,9 @@ export interface CqEntity<TProps> {
     props: TProps
 }
 
-type CqDataType<TModel extends EntityModel> = CqRef<TModel,keyof TModel> | CqString | CqNumber | CqDateTime | CqBoolean | CqObject;
+export type CqDataType<TModel extends EntityModel> = CqRef<TModel,keyof TModel> | CqString | CqNumber | CqDateTime | CqBoolean | CqObject;
 
-type CqSchema<TModel extends EntityModel> = CqDataType<TModel> | CqDataType<TModel>[];
+export type CqSchema<TModel extends EntityModel> = CqDataType<TModel> | CqDataType<TModel>[];
 
 export interface EntityModel {
     [entityName:string]: CqEntity<Record<string,unknown>>
@@ -70,7 +70,9 @@ type Process<TModel extends EntityModel,T> =
                 ? Date
                 : (T extends CqBoolean
                     ? boolean
-                    : (T extends CqRef<TModel,infer TTarget>
+                    /* eslint-disable */
+                    : (T extends CqRef<TModel,infer _>
+                    /* eslint-enable */
                         ? Denormalized<TModel,TModel[T["target"]]["props"]>
                         : (T extends CqObject
                             ? object
@@ -81,8 +83,6 @@ export type Denormalized<TModel extends EntityModel,TProps> = {
         ? Process<TModel,Item>[]
         : Process<TModel,TProps[prop]>
 }
-
-
 
 export interface SView<TModel extends EntityModel,TReq,TEntityName extends keyof TModel> {
     data: Denormalized<TModel,TModel[TEntityName]["props"]>[]
@@ -130,7 +130,7 @@ type EqualityFn<T> = undefined | ((l:T, r:T) => boolean)
 
 type CqSelector<TFrom,TTo> = (s:TFrom) => TTo
 
-export const useCqSelector = <TModel extends EntityModel,SGlobal extends SInstallation<TModel>,T>(selector:CqSelector<S<TModel>,T>, equalityFn:EqualityFn<T>=undefined) => 
+export const useEcqSelector = <TModel extends EntityModel,SGlobal extends SInstallation<TModel>,T>(selector:CqSelector<S<TModel>,T>, equalityFn:EqualityFn<T>=undefined) => 
     useSelector((s:SGlobal) => selector(s[ECQ_REDUCER_KEY]), equalityFn);
 
 export const jsObject = (): CqObject => ({ type: "object" })
@@ -149,31 +149,31 @@ export const jsEntity = <TProps extends {[k:string]:unknown},TKey extends keyof 
 
 type AllData = boolean | string | number | Date | MayBe<AllData>[] | { [prop:string]: MayBe<AllData> };
 
-const denormalizeObject = <TModel>(model: TModel, data:MayBe<AllData>, schema:CqObject) => {
+const denormalizeObject = <TModel>(model: TModel, data:MayBe<AllData>) => {
     if (data === undefined || data === null) return data;
     if (!(data instanceof Object)) throw "Expected object";
     return data;
 }
 
-const denormalizeString = <TModel>(model: TModel, data:MayBe<AllData>, schema:CqString) => {
+const denormalizeString = <TModel>(model: TModel, data:MayBe<AllData>) => {
     if (data === undefined || data === null) return data;
     if (typeof data !== "string") throw "Expected string";
     return data;
 }
 
-const  denormalizeNumber = <TModel>(model: TModel, data:MayBe<AllData>, schema:CqNumber) => {
+const  denormalizeNumber = <TModel>(model: TModel, data:MayBe<AllData>) => {
     if (data === undefined || data === null) return data;
     if (typeof data !== "number") throw "Expected number";
     return data;
 }
 
-const denormalizeDate = <TModel>(model: TModel, data:MayBe<AllData>, schema:CqDateTime) => {
+const denormalizeDate = <TModel>(model: TModel, data:MayBe<AllData>) => {
     if (data === undefined || data === null) return data;
     if (!(data instanceof Date)) throw "Expected Date";
     return data;
 }
 
-const denormalizeBoolean = <TModel>(model: TModel, data:MayBe<AllData>, schema:CqBoolean) => {
+const denormalizeBoolean = <TModel>(model: TModel, data:MayBe<AllData>) => {
     if (data === undefined || data === null) return data;
     if (typeof data !== "boolean") throw "Expected boolean";
     return data;
@@ -186,7 +186,7 @@ function denormalizeRef<TModel extends EntityModel,TName extends keyof TModel>(m
     const entitySet = db[schema.target];
     const targetData = entitySet ? entitySet[data] : undefined;
     if (targetData) {
-        let denormalizedEntity:Record<string,MayBe<AllData>> = { };
+        const denormalizedEntity:Record<string,MayBe<AllData>> = { };
         for (const prop in targetEntity) {
             denormalizedEntity[prop] = denormalize(model, db, targetData[prop], targetEntity[prop] as CqSchema<TModel>, maxDepth - 1);
         }
@@ -200,11 +200,11 @@ function denormalizeRef<TModel extends EntityModel,TName extends keyof TModel>(m
 export function denormalize<TModel extends EntityModel>(model: TModel, db:EntityDb<TModel>, data:MayBe<AllData>, schema:CqSchema<TModel>, maxDepth:number):MayBe<AllData> {
     if (Array.isArray(schema)) return denormalizeArray(model, db, data, schema[0], maxDepth);
     else if (schema.type === "ref") return denormalizeRef(model, db, data, schema, maxDepth);
-    else if (schema.type === "boolean") return denormalizeBoolean(model, data, schema);
-    else if (schema.type === "string") return denormalizeString(model, data, schema);
-    else if (schema.type === "number") return denormalizeNumber(model, data, schema);
-    else if (schema.type === "datetime") return denormalizeDate(model, data, schema);
-    else if (schema.type === "object") return denormalizeObject(model, data, schema);
+    else if (schema.type === "boolean") return denormalizeBoolean(model, data);
+    else if (schema.type === "string") return denormalizeString(model, data);
+    else if (schema.type === "number") return denormalizeNumber(model, data);
+    else if (schema.type === "datetime") return denormalizeDate(model, data);
+    else if (schema.type === "object") return denormalizeObject(model, data);
     else throw "Unsupported schema type";
 }
 
@@ -217,7 +217,7 @@ function denormalizeArray<TModel extends EntityModel>(model: TModel, db:EntityDb
 type NormalizeResult<TModel extends EntityModel,T> = [MayBe<T>,EntityDb<TModel>];
 
 export const uniqueEntityRefs = <TModel extends EntityModel>(entities:EntityDb<TModel>) => {
-    let unique:EntityRefCollection = { }
+    const unique:EntityRefCollection = { }
     for (const type in entities) {
         unique[type] = unique[type] || { };
         for (const key in entities[type]) {
@@ -228,7 +228,7 @@ export const uniqueEntityRefs = <TModel extends EntityModel>(entities:EntityDb<T
 }
 
 export const mergeEntityRefs = (...refs:EntityRefCollection[]) => {
-    let combined:EntityRefCollection = { }
+    const combined:EntityRefCollection = { }
     for (const ref of refs) {
         for (const toAdd in ref) {
             combined[toAdd] = {
@@ -241,13 +241,12 @@ export const mergeEntityRefs = (...refs:EntityRefCollection[]) => {
 }
 
 export const removeEntities = <TModel extends EntityModel>(db:EntityDb<TModel>, refs:EntityRefCollection):EntityDb<TModel> => {
-    let dbNew:EntityDb<TModel> = { };
+    const dbNew:EntityDb<TModel> = { };
     for (const type in db) {
         dbNew[type] = { };
-        
         for (const key in db[type]) {
             if (!(type in refs) || !(key in refs[type])) {
-                dbNew[type]![key] = db![type]![key];
+                (dbNew[type])[key] = (db[type])[key];
             }
         }
     }
@@ -255,18 +254,18 @@ export const removeEntities = <TModel extends EntityModel>(db:EntityDb<TModel>, 
 }
 
 export function mergeEntities<TModel extends EntityModel>(left:EntityDb<TModel>, right: EntityDb<TModel>):EntityDb<TModel> {
-    let dbNew:EntityDb<TModel> = { };
+    const dbNew:EntityDb<TModel> = { };
     for (const type in left) {
         dbNew[type] = dbNew[type] || { };
         for (const key in left[type]) {
-            (dbNew[type] as any)[key] = { ...(left[type] as any)[key] };
+            (dbNew[type])[key] = { ...(left[type])[key] };
         }
     }
 
     for (const type in right) {
         dbNew[type] = dbNew[type] || { };
         for (const key in right[type]) {
-            (dbNew[type] as any)[key] = { ...(dbNew[type] as any)[key], ...(right[type]as any)[key] };
+            (dbNew[type])[key] = { ...(dbNew[type])[key], ...(right[type])[key] };
         }
     }
 
@@ -275,31 +274,31 @@ export function mergeEntities<TModel extends EntityModel>(left:EntityDb<TModel>,
 
 const normalized = <TModel extends EntityModel,T>(model: TModel, value: T, db:EntityDb<TModel> = {}):NormalizeResult<TModel,T> => [value, db]
 
-const normalizeObject = <TModel extends EntityModel>(model: TModel, data:MayBe<AllData>, schema:CqObject) => {
+const normalizeObject = <TModel extends EntityModel>(model: TModel, data:MayBe<AllData>) => {
     if (data === undefined || data === null) return normalized(model, data);
     if (!(data instanceof Object)) throw "Expected object";
     return normalized(model, data);
 }
 
-const normalizeString = <TModel extends EntityModel>(model: TModel, data:MayBe<AllData>, schema:CqString) => {
+const normalizeString = <TModel extends EntityModel>(model: TModel, data:MayBe<AllData>) => {
     if (data === undefined || data === null) return normalized(model, data);
     if (typeof data !== "string") throw "Expected string";
     return normalized(model, data);
 }
 
-const  normalizeNumber = <TModel extends EntityModel>(model: TModel, data:MayBe<AllData>, schema:CqNumber) => {
+const  normalizeNumber = <TModel extends EntityModel>(model: TModel, data:MayBe<AllData>) => {
     if (data === undefined || data === null) return normalized(model, data);
     if (typeof data !== "number") throw "Expected number";
     return normalized(model, data);
 }
 
-const normalizeDate = <TModel extends EntityModel>(model: TModel, data:MayBe<AllData>, schema:CqDateTime) => {
+const normalizeDate = <TModel extends EntityModel>(model: TModel, data:MayBe<AllData>) => {
     if (data === undefined || data === null) return normalized(model, data);
     if (!(data instanceof Date)) throw "Expected Date";
     return normalized(model, data);
 }
 
-const normalizeBoolean = <TModel extends EntityModel>(model: TModel, data:MayBe<AllData>, schema:CqBoolean) => {
+const normalizeBoolean = <TModel extends EntityModel>(model: TModel, data:MayBe<AllData>) => {
     if (data === undefined || data === null) return normalized(model, data);
     if (typeof data !== "boolean") throw "Expected boolean";
     return normalized(model, data);
@@ -312,7 +311,7 @@ function normalizeRef<TModel extends EntityModel,TName extends keyof TModel>(mod
     if (Array.isArray(data)) throw "Expected instance of object";
     const def = model[schema.target];
     let db:EntityDb<TModel> = { };
-    let normalizedMap:Record<string,MayBe<AllData>> = {};
+    const normalizedMap:Record<string,MayBe<AllData>> = {};
     for (const prop in def.props) {
         const [nValue, dbFromProp] = normalize(model, data[prop], def.props[prop] as CqSchema<TModel>);
         normalizedMap[prop] = nValue;
@@ -325,7 +324,7 @@ function normalizeRef<TModel extends EntityModel,TName extends keyof TModel>(mod
 export function normalizeArray<TModel extends EntityModel>(model: TModel, data:MayBe<AllData>, schema:CqDataType<TModel>) {
     if (data === undefined || data === null) return normalized(model, []);
     if ((typeof data === "string") || !Array.isArray(data)) throw "Expected array";
-    let values:AllData[] = [];
+    const values:AllData[] = [];
     let db = { }
     for (const item of data) {
         const [value, dbFromValue] = normalize(model, item, schema);
@@ -338,10 +337,10 @@ export function normalizeArray<TModel extends EntityModel>(model: TModel, data:M
 export function normalize<TModel extends EntityModel>(model: TModel, data:MayBe<AllData>, schema:CqSchema<TModel>):NormalizeResult<TModel,AllData> {
     if (Array.isArray(schema)) return normalizeArray(model, data, schema[0]);
     else if (schema.type === "ref") return normalizeRef(model, data, schema);
-    else if (schema.type === "boolean") return normalizeBoolean(model, data, schema);
-    else if (schema.type === "string") return normalizeString(model, data, schema);
-    else if (schema.type === "number") return normalizeNumber(model, data, schema);
-    else if (schema.type === "datetime") return normalizeDate(model, data, schema);
-    else if (schema.type === "object") return normalizeObject(model, data, schema);
+    else if (schema.type === "boolean") return normalizeBoolean(model, data);
+    else if (schema.type === "string") return normalizeString(model, data);
+    else if (schema.type === "number") return normalizeNumber(model, data);
+    else if (schema.type === "datetime") return normalizeDate(model, data);
+    else if (schema.type === "object") return normalizeObject(model, data);
     else throw "Unsupported schema type";
 }

@@ -1,13 +1,12 @@
 import { Dispatch, useEffect, useState } from "react"
 import { shallowEqual, useDispatch } from "react-redux"
 import { querySuccess, queryRun, viewUnmount, dataSync, CqAction } from "./actions"
-import { QueryResponse, useCqSelector, EntityModel, Denormalized, ChangeReport, ErrorType } from "./core"
+import { QueryResponse, useEcqSelector, EntityModel, Denormalized, ChangeReport, ErrorType } from "./core"
 
 
+export type AsyncQueryHandler<TReq,TData> = (req:TReq) => Promise<QueryResponse<TData>>
 
-type AsyncQueryHandler<TReq,TData> = (req:TReq) => Promise<QueryResponse<TData>>
-
-type SViewSummary<TModel extends EntityModel,TReq,TEntityName extends keyof TModel> = {
+export type SQuery<TModel extends EntityModel,TReq,TEntityName extends keyof TModel> = {
     data: Denormalized<TModel,TModel[TEntityName]["props"]>[]
     total: number
     pending: boolean
@@ -16,13 +15,21 @@ type SViewSummary<TModel extends EntityModel,TReq,TEntityName extends keyof TMod
     lastCreatedReq: TReq
     lastHandledReq: Partial<TReq>
 } 
+
+export type QueryHook<TModel extends EntityModel,TReq,TName extends keyof TModel> = (initReq:TReq, maxDepth:number) => [SQuery<TModel,TReq,TName>,(req:TReq) => void]
+
+export type CommandResponse<TPayload> = TPayload
+
+export type CommandHandler<TCommand,TRes> = (params:TCommand) => Promise<CommandResponse<TRes>>
+
+export type Updater<TModel extends EntityModel> = (updates:Partial<ChangeReport<TModel>>) => void
   
 let __seq = 0;
 const nextId = () => ++__seq;
 
 export const queryHook = <
     TModel extends EntityModel,
-    TReq extends {},
+    TReq extends Record<string,unknown>,
     TName extends keyof TModel,
     TProps extends TModel[TName]["props"],
     TData extends Denormalized<TModel,TProps>>(
@@ -39,7 +46,7 @@ export const queryHook = <
                     }); 
             }
     
-        const initViewState = (req: TReq | {}) => ({
+        const initViewState = (req: TReq | Record<string,never>) => ({
             data: [],
             pending: true,
             lastError: null,
@@ -49,9 +56,11 @@ export const queryHook = <
             lastHandledReq: {}
         });
 
-        return (req?: TReq, maxDepth: number = 3): [SViewSummary<TModel,TReq,TName>, (req:TReq) => void] => {
+        return (req?: TReq, maxDepth = 3): [SQuery<TModel,TReq,TName>, (req:TReq) => void] => {
+            /* eslint-disable */
             const [viewSeq, _] = useState(nextId().toString());
-            const sView = useCqSelector(s => s.views[viewSeq] as SViewSummary<TModel,TReq,TName> ?? initViewState(req ?? { }), shallowEqual);
+            /* eslint-enable */
+            const sView = useEcqSelector(s => s.views[viewSeq] as SQuery<TModel,TReq,TName> ?? initViewState(req ?? { }), shallowEqual);
             const dispatch = useDispatch();
 
             // view mounting / unmounting
@@ -64,21 +73,13 @@ export const queryHook = <
                 return () => {
                     dispatch(viewUnmount(viewSeq));
                 }
-            }, Object.values(req as any ?? { })); //[initReq]);
+            }, Object.values(req ?? { })); //[initReq]);
 
             // return view state and one-way fetcher method
             return [sView, fetcher];
         }
     
 }
-
-export type QueryHook<TModel extends EntityModel,TReq,TName extends keyof TModel> = (initReq:TReq, maxDepth:number) => [SViewSummary<TModel,TReq,TName>,(req:TReq) => void]
-
-type CommandResponse<TPayload> = TPayload
-
-type CommandHandler<TCommand,TRes> = (params:TCommand) => Promise<CommandResponse<TRes>>
-
-type Updater<TModel extends EntityModel> = (updates:Partial<ChangeReport<TModel>>) => void
 
 export const commandHook = <
     TModel extends EntityModel,

@@ -44,7 +44,7 @@ import {
     jsNumber,
     jsDateTime,
     jsRef,
-    TypeOf
+    DenormalizedType
 } from "redux-ecq";
 
 export const entityModel = {
@@ -62,9 +62,9 @@ export const entityModel = {
     }, "accountId")
 }
 
-// Optionally, you can use TypeOf<> to compute the denormalized shape of an entity for using in your application. That saves you from the additional boilerplate of re-defining the above entities as Typescript types
-export type Shipment = TypeOf<typeof entityModel, "shipment">
-export type Customer = TypeOf<typeof entityModel, "customer">
+// Optionally, you can use DenormalizedType<> to compute the denormalized shape of an entity for using in your application. That saves you from the additional boilerplate of re-defining the above entities as Typescript types
+export type Shipment = DenormalizedType<typeof entityModel, "shipment">
+export type Customer = DenormalizedType<typeof entityModel, "customer">
 
 ```
 
