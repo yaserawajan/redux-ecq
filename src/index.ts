@@ -5,7 +5,7 @@ export { jsEntity, jsRef, jsBoolean, jsNumber, jsDateTime, jsString, useEcqSelec
 
 export { createEcqReducer } from "./reducers";
 
-export { EntityModel, SView, S, CqBoolean, CqDataType, CqDateTime, CqEntity, CqNumber, CqObject, CqRef, CqSchema } from "./core";
+export { EntityModel, SView, S, CqString, CqBoolean, CqDataType, CqDateTime, CqEntity, CqNumber, CqObject, CqRef, CqSchema } from "./core";
 
 export { AsyncQueryHandler, Updater, SQuery, CommandHandler, CommandResponse, QueryHook } from "./hookApi";
 
