@@ -1,14 +1,13 @@
 import { Dispatch, useEffect, useState } from "react"
 import { shallowEqual, useDispatch } from "react-redux"
 import { querySuccess, queryRun, viewUnmount, dataSync, CqAction } from "./actions"
-import { QueryResponse, useEcqSelector, EntityModel, Denormalized, ChangeReport, ErrorType } from "./core"
+import { QueryResults, useEcqSelector, EntityModel, ChangeReport, ErrorType, DenormalizedType } from "./core"
 
 
-export type AsyncQueryHandler<TReq,TData> = (req:TReq) => Promise<QueryResponse<TData>>
+export type AsyncQueryHandler<TReq,TData,TRes extends QueryResults<TData>> = (req:TReq) => Promise<TRes>
 
-export type SQuery<TModel extends EntityModel,TReq,TEntityName extends keyof TModel> = {
-    data: Denormalized<TModel,TModel[TEntityName]["props"]>[]
-    total: number
+export type SQuery<TModel extends EntityModel,TReq,TEntityName extends keyof TModel,TRes extends QueryResults<DenormalizedType<TModel,TEntityName>>> = {
+    results: TRes
     pending: boolean
     lastError: string | null
     lastErrorType: ErrorType | null
@@ -16,7 +15,7 @@ export type SQuery<TModel extends EntityModel,TReq,TEntityName extends keyof TMo
     lastHandledReq: Partial<TReq>
 } 
 
-export type QueryHook<TModel extends EntityModel,TReq,TName extends keyof TModel> = (initReq:TReq, maxDepth:number) => [SQuery<TModel,TReq,TName>,(req:TReq) => void]
+export type QueryHook<TModel extends EntityModel,TReq,TName extends keyof TModel,TRes extends QueryResults<DenormalizedType<TModel,TName>>> = (initReq:TReq, maxDepth:number) => [SQuery<TModel,TReq,TName,TRes>,(req:TReq) => void]
 
 export type CommandResponse<TPayload> = TPayload
 
@@ -31,23 +30,25 @@ export const queryHook = <
     TModel extends EntityModel,
     TReq extends Record<string,unknown>,
     TName extends keyof TModel,
-    TProps extends TModel[TName]["props"],
-    TData extends Denormalized<TModel,TProps>>(
+    TData extends DenormalizedType<TModel,TName>,
+    TRes extends QueryResults<TData>>(
     entityModel:TModel, 
     entityName:TName, 
-    handler:AsyncQueryHandler<TReq,TData>) => {
+    handler:AsyncQueryHandler<TReq,TData,TRes>) => {
 
         const createFetcher = (viewSeq:string, dispatch:Dispatch<CqAction<TModel>>, maxDepth:number) =>
             (req:TReq) => {
                 dispatch(queryRun(req, viewSeq, entityName, maxDepth));
                 handler(req)
                     .then(res => {
-                        dispatch(querySuccess(viewSeq, req, entityName, maxDepth, res.results, res.total));
+                        dispatch(querySuccess(viewSeq, req, entityName, maxDepth, res));
                     }); 
             }
     
         const initViewState = (req: TReq | Record<string,never>) => ({
-            data: [],
+            results: {
+                data: []
+            },
             pending: true,
             lastError: null,
             lastErrorType: null,
@@ -56,11 +57,11 @@ export const queryHook = <
             lastHandledReq: {}
         });
 
-        return (req?: TReq, maxDepth = 3): [SQuery<TModel,TReq,TName>, (req:TReq) => void] => {
+        return (req?: TReq, maxDepth = 3): [SQuery<TModel,TReq,TName,TRes>, (req:TReq) => void] => {
             /* eslint-disable */
             const [viewSeq, _] = useState(nextId().toString());
             /* eslint-enable */
-            const sView = useEcqSelector(s => s.views[viewSeq] as SQuery<TModel,TReq,TName> ?? initViewState(req ?? { }), shallowEqual);
+            const sView = useEcqSelector(s => s.views[viewSeq] as SQuery<TModel,TReq,TName,TRes> ?? initViewState(req ?? { }), shallowEqual);
             const dispatch = useDispatch();
 
             // view mounting / unmounting

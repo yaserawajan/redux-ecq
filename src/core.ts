@@ -15,9 +15,8 @@ export interface ChangeReport<TModel extends EntityModel> {
     deleted: EntityRefCollection
 }
 
-export type QueryResponse<TData> = {
-    total: number
-    results: TData[]
+export interface QueryResults<TData> {
+    data: TData[]
 }
 
 export interface CqRef<TModel extends EntityModel,TTarget extends keyof TModel> {
@@ -84,8 +83,10 @@ export type Denormalized<TModel extends EntityModel,TProps> = {
         : Process<TModel,TProps[prop]>
 }
 
-export interface SView<TModel extends EntityModel,TReq,TEntityName extends keyof TModel> {
-    data: Denormalized<TModel,TModel[TEntityName]["props"]>[]
+export type DenormalizedType<TModel extends EntityModel,TName extends keyof TModel> = Denormalized<TModel,TModel[TName]["props"]>
+
+export interface SView<TModel extends EntityModel,TEntityName extends keyof TModel,TReq,TResults extends QueryResults<DenormalizedType<TModel,TEntityName>>> {
+    results: TResults
     rootKeys: string[]
     total: number
     rootEntity: string
@@ -115,7 +116,7 @@ export interface S<TModel extends EntityModel> {
     deps: DependencyTable
     entities: EntityDb<TModel>
     views: {
-        [viewSeq:string]: SView<TModel,unknown,keyof TModel>
+        [viewSeq:string]: SView<TModel,keyof TModel,unknown,any>
     }
 }
 

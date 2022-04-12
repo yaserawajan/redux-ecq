@@ -1,4 +1,4 @@
-import { ChangeReport, Denormalized, EntityModel, ErrorType } from "./core";
+import { ChangeReport, Denormalized, DenormalizedType, EntityModel, ErrorType, QueryResults } from "./core";
 
 
 export type QueryRunAction<TModel extends EntityModel,TReq,TEntityName extends keyof TModel> = {
@@ -17,30 +17,27 @@ export const queryRun = <TModel extends EntityModel,TReq,TEntityName extends key
     maxDepth
 });
 
-export interface QuerySuccessAction<TModel extends EntityModel,TReq,TEntityName extends keyof TModel> {
+export interface QuerySuccessAction<TModel extends EntityModel,TReq,TEntityName extends keyof TModel,TRes extends QueryResults<DenormalizedType<TModel,TEntityName>>> {
     type: "CQ/QUERY-SUCCESS"
     viewSeq: string
     request: TReq
     rootEntity: TEntityName
     maxDepth: number
-    data: Denormalized<TModel,TModel[TEntityName]["props"]>[]
-    total: number
+    results: TRes
 }
 
-export const querySuccess = <TModel extends EntityModel,TReq,TEntityName extends keyof TModel>(
+export const querySuccess = <TModel extends EntityModel,TReq,TEntityName extends keyof TModel,TRes extends QueryResults<DenormalizedType<TModel,TEntityName>>>(
     viewSeq:string, 
     request:TReq, 
     rootEntity: TEntityName, 
     maxDepth: number,
-    data: Denormalized<TModel,TModel[TEntityName]["props"]>[],
-    total: number):QuerySuccessAction<TModel,TReq,TEntityName> => ({
+    results: TRes):QuerySuccessAction<TModel,TReq,TEntityName,TRes> => ({
         type: "CQ/QUERY-SUCCESS",
         viewSeq,
         request,
         maxDepth,
         rootEntity,
-        data,
-        total
+        results
     })
 
 export type QueryErrorAction<TReq> = {
@@ -81,7 +78,7 @@ export const dataSync = <TModel extends EntityModel>(changes:ChangeReport<TModel
 
 export type CqAction<TModel extends EntityModel> = 
 QueryRunAction<TModel,unknown,keyof TModel> | 
-QuerySuccessAction<TModel,unknown,keyof TModel> | 
+QuerySuccessAction<TModel,unknown,keyof TModel,any> | 
 QueryErrorAction<unknown> |
 DataSyncAction<TModel> |
 ViewUnmountAction

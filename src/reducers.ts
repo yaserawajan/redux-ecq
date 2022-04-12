@@ -29,8 +29,6 @@ export const createEcqReducer = <TModel extends EntityModel>(entityModel: TModel
                     ...s.views,
                     [action.viewSeq]: {
                         ...s.views[action.viewSeq],
-                        total: (s.views[action.viewSeq] ?? {}).total ?? 0,
-                        data: (s.views[action.viewSeq] ?? {}).data ?? [],
                         pending: true,
                         lastCreatedReq: action.request
                     }
@@ -44,7 +42,7 @@ export const createEcqReducer = <TModel extends EntityModel>(entityModel: TModel
                 // cleanup entities referenced by existing view
                 const [entities, deps] = purgeEntities(s, action.viewSeq);
                 // normalize payload
-                const [rootKeys, updates] = normalizeArray(entityModel, action.data, jsRef(action.rootEntity));
+                const [rootKeys, updates] = normalizeArray(entityModel, action.results.data, jsRef(action.rootEntity));
                 // merge entities
                 const updatedEntities = mergeEntities(entities, updates);
                 // denormalize data again to ensure consistency
@@ -61,11 +59,13 @@ export const createEcqReducer = <TModel extends EntityModel>(entityModel: TModel
                             pending: false,
                             lastError: null,
                             lastErrorType: null,
-                            data,
+                            results: {
+                                ...action.results,
+                                data
+                            },
                             lastHandledReq: action.request,
                             rootEntity: action.rootEntity as string,
-                            maxDepth: action.maxDepth,
-                            total: action.total
+                            maxDepth: action.maxDepth
                         }
                     }
                 }
@@ -90,13 +90,21 @@ export const createEcqReducer = <TModel extends EntityModel>(entityModel: TModel
                 uniqueEntityRefs(created), 
                 uniqueEntityRefs(modified), 
                 deleted));
-            // remove deps
+            // remove deps of deleted entities
             const deps = removeDepEntities(s.deps, deleted);
             // denormalize views
-            const viewEntries = Object.entries(s.views).filter(([viewSeq, view]) => 
+            const viewEntries = Object.entries(s.views).map(([viewSeq, view]) => [
+                viewSeq,
                 (viewSeq in depViews)
-                ? { }
-                : { ...view, data: denormalize(entityModel, entities, view.rootKeys, jsRef(view.rootEntity), view.maxDepth) });
+                    ? { 
+                        ...view, 
+                        results: {
+                            ...view.results,
+                            data: denormalize(entityModel, entities, view.rootKeys, [jsRef(view.rootEntity)], view.maxDepth)
+                        }
+                    }
+                    : view
+            ]);
             const views = Object.fromEntries(viewEntries);
             // updated state
             return { ...s, deps, views, entities };
