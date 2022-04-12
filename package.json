@@ -1,6 +1,6 @@
 {
   "name": "redux-ecq",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Library for managing backend queries, commands and entities",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -32,7 +32,6 @@
     "react-redux": "^7.2.8",
     "redux": "^4.1.2"
   },
-  "peerDependenciesMeta": {},
   "devDependencies": {
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "^13.0.0",
