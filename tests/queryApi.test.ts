@@ -73,7 +73,7 @@ const useQuery = queryHook(entityModel, "shipment", (req:ShipmentReq) => {
     });
 });
 
-it("does nothing if no request is give and ensures an empty data array", () => {
+it("does nothing if no request is given and ensures an empty data array", () => {
 
     const store = createStore(combineReducers({ [ECQ_REDUCER_KEY]: createEcqReducer(entityModel) }))
 

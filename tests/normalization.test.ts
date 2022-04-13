@@ -1,7 +1,6 @@
-import { jsEntity, jsNumber, jsRef, jsString, removeEntities } from "../src/core";
+import { jsEntity, jsString, jsRef, jsNumber } from "../src/core";
+import { normalize, denormalize } from "../src/normalization";
 
-
-export { }
 
 const entityModel = {
 
@@ -55,37 +54,36 @@ const testDb = {
     }
 }
 
-it("removes entities", () => {
 
-    const refs = {
-        order: {
-            "123": true,
-            "234": true
-        }
-    }
-
-    const dbAfter = removeEntities(testDb, refs);
-    expect(dbAfter).toStrictEqual({
-        order: { },
+it('normalizes / denormalizes payload', () => {
+    const testOrder = {
+        id: "123",
+        country: "JO",
         customer: {
-            "888": {
-                id: "888",
-                fullName: "John Doe",
-                gender: "male"
-            }
+            id: "888",
+            fullName: "John Doe",
+            gender: "male"
         },
-        orderLineItem: {
-            "1": {
+        lineItems: [
+            {
                 id: "1",
                 product: "Hair Dryer",
                 qty: 3
             },
-            "2": {
+            {
                 id: "2",
                 product: "Watermelon",
                 qty: 2
             }
-        }
-    })
-})
+        ]
+    };
 
+    const [normalizedOrder, db] = normalize(entityModel, testOrder, jsRef("order"))
+
+    expect(normalizedOrder).toBe("123");
+    
+    expect(db).toStrictEqual(testDb);
+
+    const denormalizedOrder = denormalize(entityModel, db, "123", jsRef("order"), 3);
+    expect(denormalizedOrder).toStrictEqual(testOrder);
+});

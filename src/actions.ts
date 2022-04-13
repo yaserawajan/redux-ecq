@@ -1,4 +1,4 @@
-import { ChangeReport, Denormalized, DenormalizedType, EntityModel, ErrorType, QueryResults } from "./core";
+import { ChangeReport, DenormalizedType, EntityModel, QueryResults } from "./core";
 
 
 export type QueryRunAction<TModel extends EntityModel,TReq,TEntityName extends keyof TModel> = {
@@ -28,7 +28,7 @@ export interface QuerySuccessAction<TModel extends EntityModel,TReq,TEntityName 
 
 export const querySuccess = <TModel extends EntityModel,TReq,TEntityName extends keyof TModel,TRes extends QueryResults<DenormalizedType<TModel,TEntityName>>>(
     viewSeq:string, 
-    request:TReq, 
+    request:TReq,  
     rootEntity: TEntityName, 
     maxDepth: number,
     results: TRes):QuerySuccessAction<TModel,TReq,TEntityName,TRes> => ({
@@ -44,15 +44,13 @@ export type QueryErrorAction<TReq> = {
     type: "CQ/QUERY-ERROR"
     viewSeq:string, 
     request:TReq, 
-    errorType: ErrorType
-    error: string
+    error: any
 }
 
-export const queryError = <TReq>(viewSeq:string, request:TReq, errorType:ErrorType, error:string):QueryErrorAction<TReq> => ({
+export const queryError = <TReq>(viewSeq: string, request: TReq, error: any):QueryErrorAction<TReq> => ({
     type: "CQ/QUERY-ERROR",
     viewSeq,
     request,
-    errorType,
     error
 })
 
@@ -78,7 +76,9 @@ export const dataSync = <TModel extends EntityModel>(changes:ChangeReport<TModel
 
 export type CqAction<TModel extends EntityModel> = 
 QueryRunAction<TModel,unknown,keyof TModel> | 
+/* eslint-disable */
 QuerySuccessAction<TModel,unknown,keyof TModel,any> | 
+/* eslint-enable */
 QueryErrorAction<unknown> |
 DataSyncAction<TModel> |
 ViewUnmountAction

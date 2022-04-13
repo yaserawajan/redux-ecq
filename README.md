@@ -6,13 +6,10 @@
 
 **Q** for Query: On the other side, a query is a call to a remote backend to retrieve data without changing anything.
 
-Redux ECQ is a library that allows developers to run commands and queries against backends while managing all the involved state, including query / command execution states and the state of data entities coming back from queries or being updated by commands. The library helps bring the following merits to front-end applications while alleviating the extra boilerplate code and indirection required to typically achieve that:
-
-## Less or No Side-Effect-Managing Business Inside Components
-The library offers hooks for watching query state and firing query requests in one-way fashion. 
+Redux ECQ is a Typescript front-end library that allows TS developers to define and run commands and queries while managing all the involved state, including query / command execution states and the state of data entities imported from queries or updated by commands. The library helps bring the following merits to front-end applications while alleviating the extra boilerplate code and indirection typically required to achieve that.
 
 ## Reactive-Readiness
-Redux ECQ is a library that leverages Redux to enable building React components that are really "reactive" in that they are agnostic to a backend's communication patterns (request-reply or push-based). A reactive component is one that does not "ask" for data but instead "tells" its need for data and then reacts to state changes as data arrives back, no promises involved.
+Redux ECQ leverages Redux to allow for building promise-free data-fetching React components, ones that are agnostic to the patterns of communication with a backend (request-reply or push-based). A reactive component is one that does not "ask" for data but instead "tells", or fires requests for data and continues reacting to state changes as data arrives back.
 
 ## Normalized State of Front-end Data
 Have you ever run in a situation where an entity view updates entity data while another view still holds the old values (e.g. updating the user's profile photo while the navbar still has the old one) ? we run into these issues often and this is a primary reason for using global state management libraries like Redux. 
@@ -27,7 +24,7 @@ You can install the library using npm (or yarn if that's your preference):
 npm install --save redux-ecq
 ```
 
-The library is a typescript-first library, there is no need for installing any additional typings.
+This library is a typescript-first library, there is no need for installing any typings.
 
 ## Usage
 ### The Entity Model
@@ -179,15 +176,41 @@ const useCustomerUpdater = commandHook(entityModel, (applyChanges) =>
                     }
                 }
             });
-            // return expected response from command
+            // return expected response from command - if there is any
             return res;
         })
 });
 
-
 ```
 
+my_customer_update_form.ts
 
+```ts
+import { useCustomerUpdater } from "./my_commands";
+
+
+const CustomerUpdateForm = ({ customerId, oldName, onCustomerUpdated }) => {
+
+    const [newName, setName] = useState<string>(oldName);
+
+    const [commandState, updateCustomer] = useCustomerUpdater();
+    
+    useEffect(() => {
+        if (commandState.success) {
+            onCustomerUpdated({ customerId: ...,  });
+        }
+
+    }, [commandState.success, newName]);
+
+    return (
+        <form onSubmit={ () => updateCustomer({ newName, customerId }) }>
+            <input type="text" value={newName} onChange={setName} />
+            <button type="submit">Save</button>
+        </form>
+    )
+}
+
+```
 
 
 

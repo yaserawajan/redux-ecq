@@ -1,6 +1,7 @@
 import { CqAction } from "./actions";
-import { EntityModel, denormalize, S, jsRef, normalizeArray, mergeEntities, mergeEntityRefs, uniqueEntityRefs, removeEntities, EntityDb, DependencyTable } from "./core";
+import { EntityModel, S, jsRef, mergeEntities, mergeEntityRefs, uniqueEntityRefs, removeEntities, EntityDb, DependencyTable, SView, QueryResults, DenormalizedType } from "./core";
 import { addDeps, orphanEntities, removeDepEntities, removeDepView, viewsByEntities } from "./dependency";
+import { normalizeArray, denormalize } from "./normalization";
 
 
 export const createEcqReducer = <TModel extends EntityModel>(entityModel: TModel) => {
@@ -11,13 +12,36 @@ export const createEcqReducer = <TModel extends EntityModel>(entityModel: TModel
         deps: { }
     }
 
-    const purgeEntities = (s: S<TModel>, viewSeq:string):[EntityDb<TModel>, DependencyTable] => {
+    const purgeEntities = (s: S<TModel>, viewSeq: string):[EntityDb<TModel>, DependencyTable] => {
         // cleanup entities referenced by existing view
         const depsCleanup = removeDepView(s.deps, viewSeq);
         const orphans = orphanEntities(depsCleanup);
         const deps = removeDepEntities(depsCleanup, orphans);
         const entities = removeEntities(s.entities, orphans);
         return [entities, deps];
+    } 
+
+    const defaultResults = <
+        TName extends keyof TModel,
+        TReq,
+        TRes extends QueryResults<DenormalizedType<TModel,TName>>
+        >(view:SView<TModel,TName,TReq,TRes> | undefined, req:TReq, rootEntity: TName, maxDepth: number):SView<TModel,TName,TReq,TRes> => {
+            return view
+                ? {
+                    ...view,
+                    pending: true,
+                    lastCreatedReq: req
+                }
+                : {
+                    results: { data:[] as unknown[] } as TRes,
+                    lastHandledReq: null,
+                    rootKeys: [],
+                    rootEntity,
+                    maxDepth,
+                    pending: true,
+                    lastCreatedReq: req
+                };
+            
     }
 
     return (s:S<TModel> = sInit, action:CqAction<TModel>):S<TModel> => {
@@ -27,11 +51,7 @@ export const createEcqReducer = <TModel extends EntityModel>(entityModel: TModel
                 ...s,
                 views: {
                     ...s.views,
-                    [action.viewSeq]: {
-                        ...s.views[action.viewSeq],
-                        pending: true,
-                        lastCreatedReq: action.request
-                    }
+                    [action.viewSeq]: defaultResults(s.views[action.viewSeq], action.request, action.rootEntity, action.maxDepth)
                 }
             }
         }
@@ -46,7 +66,7 @@ export const createEcqReducer = <TModel extends EntityModel>(entityModel: TModel
                 // merge entities
                 const updatedEntities = mergeEntities(entities, updates);
                 // denormalize data again to ensure consistency
-                const data = denormalize(entityModel, updatedEntities, rootKeys, [jsRef(action.rootEntity)], action.maxDepth) as [];
+                const data = denormalize(entityModel, updatedEntities, rootKeys, [jsRef(action.rootEntity)], action.maxDepth);
                 return {
                     ...s,
                     deps: addDeps(deps, action.viewSeq, uniqueEntityRefs(updates)),
@@ -58,13 +78,12 @@ export const createEcqReducer = <TModel extends EntityModel>(entityModel: TModel
                             rootKeys: rootKeys !== null ? rootKeys as string[] : [], 
                             pending: false,
                             lastError: null,
-                            lastErrorType: null,
                             results: {
                                 ...action.results,
                                 data
                             },
                             lastHandledReq: action.request,
-                            rootEntity: action.rootEntity as string,
+                            rootEntity: action.rootEntity,
                             maxDepth: action.maxDepth
                         }
                     }
@@ -121,7 +140,7 @@ export const createEcqReducer = <TModel extends EntityModel>(entityModel: TModel
                             ...s.views[action.viewSeq],
                             pending: false,
                             lastError: action.error,
-                            lastErrorType: action.errorType
+                            lastHandledReq: action.request
                         }
                     }
                 };
