@@ -1,14 +1,18 @@
 
-export { queryHook, commandHook } from "./hookApi";
+export { queryHook } from "./queryHook";
 
-export { jsObject, jsEntity, jsRef, jsBoolean, jsNumber, jsDateTime, jsString, useEcqSelector, ECQ_REDUCER_KEY } from "./core";
+export { commandHook } from "./commandHook";
 
-export { createEcqReducer } from "./reducers";
+export { useEcqSelector, ECQ_REDUCER_KEY } from "./core";
+
+export { jsObject, jsEntity, jsRef, jsBoolean, jsNumber, jsDateTime, jsString } from "./entity";
+
+export { createEcqReducer } from "./reducer";
 
 export { QueryResults, DenormalizedType, SQuery, SCommand, EntityModel, SView, S, CqString, CqBoolean, CqDataType, CqDateTime, CqEntity, CqNumber, CqObject, CqRef, CqSchema } from "./core";
 
-export { AsyncQueryHandler, Updater, CommandHandler, CommandResponse, QueryHook, CommandDispatcher, CommandHandlerFactory } from "./hookApi";
+export { AsyncQueryHandler,  QueryHook } from "./queryHook";
 
-
+export { Updater, CommandHandler, CommandResponse, CommandDispatcher, CommandHandlerFactory } from "./commandHook";
 
 

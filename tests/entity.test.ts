@@ -1,4 +1,4 @@
-import { jsEntity, jsNumber, jsRef, jsString, removeEntities } from "../src/core";
+import { jsEntity, jsNumber, jsRef, jsString, removeEntities } from "../src/entity";
 
 
 export { }

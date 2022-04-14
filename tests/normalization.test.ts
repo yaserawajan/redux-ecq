@@ -1,4 +1,4 @@
-import { jsEntity, jsString, jsRef, jsNumber } from "../src/core";
+import { jsEntity, jsString, jsRef, jsNumber } from "../src";
 import { normalize, denormalize } from "../src/normalization";
 
 

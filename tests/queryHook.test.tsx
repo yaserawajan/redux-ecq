@@ -6,17 +6,16 @@ import { render, fireEvent, screen, waitFor } from "@testing-library/react";
 import { createStore, combineReducers } from "redux";
 import { Provider } from "react-redux";
 import '@testing-library/jest-dom';
-import { createEcqReducer } from "../src/reducers";
-import { queryHook } from "../src/hookApi";
 import { 
+    createEcqReducer, 
+    queryHook, 
     jsEntity, 
     jsString,
     jsNumber,
     jsDateTime,
     jsRef,
-    ECQ_REDUCER_KEY,
-} from "../src/core";
-import { act } from "react-dom/test-utils";
+    ECQ_REDUCER_KEY
+ } from "../src";
 
 
 const entityModel = {
@@ -38,7 +37,7 @@ interface ShipmentReq {
     id: string
 }
 
-const useQuery = queryHook(entityModel, "shipment", (req:ShipmentReq) => {
+const useQuery = queryHook(entityModel, "shipment", (req: ShipmentReq) => {
     return Promise.resolve({
         total: 2, 
         data: [
@@ -53,8 +52,7 @@ const useQuery = queryHook(entityModel, "shipment", (req:ShipmentReq) => {
                 consignee: {
                     accountId: "acc1",
                     name: "John Doe",
-                },
-
+                }
             },
             {
                 id: "2",
@@ -72,7 +70,6 @@ const useQuery = queryHook(entityModel, "shipment", (req:ShipmentReq) => {
         ]
     });
 });
-
 
 it("does nothing if no request is given and ensures an empty data array", async () => {
 
@@ -136,4 +133,8 @@ it("fires a request if given and refires if it changes", async () => {
     // expect(elAfter).not.toBeNull();
    
 
-})
+});
+
+it("response of last request prevails no matter which response came first", () => {
+
+});

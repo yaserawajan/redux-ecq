@@ -19,6 +19,7 @@ export const queryRun = <TModel extends EntityModel,TReq,TEntityName extends key
 
 export interface QuerySuccessAction<TModel extends EntityModel,TReq,TEntityName extends keyof TModel,TRes extends QueryResults<DenormalizedType<TModel,TEntityName>>> {
     type: "CQ/QUERY-SUCCESS"
+    model: TModel,
     viewSeq: string
     request: TReq
     rootEntity: TEntityName
@@ -27,11 +28,13 @@ export interface QuerySuccessAction<TModel extends EntityModel,TReq,TEntityName 
 }
 
 export const querySuccess = <TModel extends EntityModel,TReq,TEntityName extends keyof TModel,TRes extends QueryResults<DenormalizedType<TModel,TEntityName>>>(
+    model: TModel,
     viewSeq:string, 
     request:TReq,  
     rootEntity: TEntityName, 
     maxDepth: number,
     results: TRes):QuerySuccessAction<TModel,TReq,TEntityName,TRes> => ({
+        model,
         type: "CQ/QUERY-SUCCESS",
         viewSeq,
         request,

@@ -1,4 +1,5 @@
-import { AllData, CqDataType, CqRef, CqSchema, EntityDb, EntityModel, MayBe, mergeEntities } from "./core";
+import { AllData, CqDataType, CqRef, CqSchema, EntityDb, EntityModel, MayBe } from "./core";
+import { mergeEntities } from "./entity";
 
 
 const denormalizeObject = <TModel>(model: TModel, data:MayBe<AllData>) => {

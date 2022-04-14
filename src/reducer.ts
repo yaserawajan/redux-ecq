@@ -1,5 +1,6 @@
 import { CqAction } from "./actions";
-import { EntityModel, S, jsRef, mergeEntities, mergeEntityRefs, uniqueEntityRefs, removeEntities, EntityDb, DependencyTable, SView, QueryResults, DenormalizedType } from "./core";
+import { EntityModel, S, EntityDb, DependencyTable, SView, QueryResults, DenormalizedType } from "./core";
+import { jsRef, mergeEntities, mergeEntityRefs, uniqueEntityRefs, removeEntities } from "./entity";
 import { addDeps, orphanEntities, removeDepEntities, removeDepView, viewsByEntities } from "./dependency";
 import { normalizeArray, denormalize } from "./normalization";
 
