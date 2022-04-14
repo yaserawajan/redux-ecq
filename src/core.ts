@@ -54,7 +54,6 @@ export type CqSchema<TModel extends EntityModel> = CqDataType<TModel> | CqDataTy
 
 export type EntityModel = Record<string,CqEntity<Record<string,unknown>>>
 
-
 type Array<T> = T[]
 
 type Process<TModel extends EntityModel,T> = 
@@ -83,7 +82,7 @@ export type Denormalized<TModel extends EntityModel,TProps> = {
 export type DenormalizedType<TModel extends EntityModel,TName extends keyof TModel> = Denormalized<TModel,TModel[TName]["props"]>
 
 export interface SView<TModel extends EntityModel,TEntityName extends keyof TModel,TReq,TRes extends QueryResults<DenormalizedType<TModel,TEntityName>>> {
-    results: TRes | QueryResults<DenormalizedType<TModel,TEntityName>>
+    results: TRes | null
     rootKeys: string[]
     rootEntity: TEntityName
     maxDepth: number
@@ -94,7 +93,7 @@ export interface SView<TModel extends EntityModel,TEntityName extends keyof TMod
 }
 
 export type SQuery<TModel extends EntityModel,TReq,TEntityName extends keyof TModel,TRes extends QueryResults<DenormalizedType<TModel,TEntityName>>> = {
-    results: TRes | QueryResults<DenormalizedType<TModel,TEntityName>>
+    results: TRes | null
     pending: boolean
     lastError?: any
     lastCreatedReq: TReq | Record<string,never>

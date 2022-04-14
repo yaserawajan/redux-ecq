@@ -33,7 +33,7 @@ export const createEcqReducer = <TModel extends EntityModel>(entityModel: TModel
                     lastCreatedReq: req
                 }
                 : {
-                    results: { data:[] as unknown[] } as TRes,
+                    results: null,
                     lastHandledReq: null,
                     rootKeys: [],
                     rootEntity,

@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import { render, screen } from "@testing-library/react";
+import { render, fireEvent, screen, waitFor } from "@testing-library/react";
 import { createStore, combineReducers } from "redux";
 import { Provider } from "react-redux";
 import '@testing-library/jest-dom';
@@ -16,7 +16,7 @@ import {
     jsRef,
     ECQ_REDUCER_KEY,
 } from "../src/core";
-import { createElement } from "react";
+import { act } from "react-dom/test-utils";
 
 
 const entityModel = {
@@ -35,7 +35,7 @@ const entityModel = {
 }
 
 interface ShipmentReq {
-
+    id: string
 }
 
 const useQuery = queryHook(entityModel, "shipment", (req:ShipmentReq) => {
@@ -73,17 +73,67 @@ const useQuery = queryHook(entityModel, "shipment", (req:ShipmentReq) => {
     });
 });
 
-it("does nothing if no request is given and ensures an empty data array", () => {
+
+it("does nothing if no request is given and ensures an empty data array", async () => {
 
     const store = createStore(combineReducers({ [ECQ_REDUCER_KEY]: createEcqReducer(entityModel) }))
 
-    const TestComponent = () => {
-        const [queryState, _] = useQuery();
-        return createElement("div", {},
-            queryState.results.data
-                .map(i => createElement("div", {}, i.weight)));
+    const C = () => {
+        const [queryState, newRequest] = useQuery();
+        return queryState.results !== null
+            ? <div>somedata</div>
+            : <div><div>nodata</div><button onClick={() => newRequest({ id: "123" })}>getsome</button></div>; 
     }
 
-    const result = render(createElement(Provider, { store }, createElement(TestComponent)));
+    
+    render(
+        <Provider store={store}>
+            <C />
+        </Provider>
+    );
+    
+    
+    // assert it's fail
+    expect(screen.getByText('nodata')).not.toBeNull();
 
+    const el =  screen.getByText("getsome");
+
+    fireEvent.click(el);
+    
+    const elAfter = await waitFor(() => screen.getByText('somedata'));
+
+    expect(elAfter).not.toBeNull();
+    
 });
+
+it("fires a request if given and refires if it changes", async () => {
+
+    // const store = createStore(combineReducers({ [ECQ_REDUCER_KEY]: createEcqReducer(entityModel) }))
+
+    // const C = () => {
+    //     const [queryState, newRequest] = useQuery({ id: "123" });
+    //     return queryState.results !== null
+    //         ? <div>somedata</div>
+    //         : <div><div>nodata</div><button onClick={() => newRequest({ id: "123" })}>getsome</button></div>; 
+    // }
+
+    // render(
+    //     <Provider store={store}>
+    //         <C />
+    //     </Provider>
+    // );
+    
+    
+    // // assert it's fail
+    // expect(screen.getByText('nodata')).not.toBeNull();
+
+    // const el =  screen.getByText("getsome");
+
+    // fireEvent.click(el);
+    
+    // const elAfter = await waitFor(() => screen.getByText('somedata'));
+
+    // expect(elAfter).not.toBeNull();
+   
+
+})

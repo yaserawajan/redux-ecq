@@ -19,7 +19,7 @@ const nextId = () => ++__seq;
 
 export const queryHook = <
     TModel extends EntityModel,
-    TReq extends Record<string,unknown>,
+    TReq extends object,
     TName extends keyof TModel,
     TData extends DenormalizedType<TModel,TName>,
     TRes extends QueryResults<TData>>(
@@ -39,14 +39,12 @@ export const queryHook = <
                     });
             }
     
-        const initViewState = (req: TReq | Record<string,never>) => ({
-            results: {
-                data: [] as TData[]
-            },
+        const initViewState = (req: TReq | undefined) => ({
+            results: null,
             pending: req !== undefined,
             lastError: null,
-            lastCreatedReq: req,
-            lastHandledReq: {}
+            lastCreatedReq: req ?? { },
+            lastHandledReq: { }
         });
 
         return (req?: TReq, maxDepth?: number): [SQuery<TModel,TReq,TName,TRes>, (req: TReq) => void] => {
@@ -55,7 +53,7 @@ export const queryHook = <
             /* eslint-enable */
             const sView = useEcqSelector(s => (viewSeq in s.views) 
                 ? s.views[viewSeq] as SQuery<TModel,TReq,TName,TRes>
-                : initViewState(req ?? { }), shallowEqual);
+                : initViewState(req), shallowEqual);
             const dispatch = useDispatch();
 
             // view mounting / unmounting
@@ -68,7 +66,7 @@ export const queryHook = <
                 return () => {
                     dispatch(viewUnmount(viewSeq));
                 }
-            }, Object.values(req ?? { }));
+            }, req === undefined ? [] : Object.values(req));
 
             // return view state and one-way fetcher method
             return [sView, fetcher];
